@@ -1,0 +1,452 @@
+:root {
+  /* Giao diện: tông sâu, trầm, chuyên nghiệp. ĐỔI 3 biến này theo bài. */
+  --accent: #0B5C8E;          /* xanh AVS đậm — trắng trên nền này 7.0:1 */
+  --accent-2: #F5B700;        /* vàng bóng đèn trong hoạ tiết PPT — chỉ progress/thưởng, KHÔNG mang chữ */
+  --accent2: #F5B700;         /* base.css dùng tên này cho --accent2-soft */
+  --bg-base: #E3F6FB;         /* xanh nhạt của nền PPT gốc */
+  /* Màu ngữ nghĩa nội dung (biển báo giao thông trong bài) */
+  --sign-red: #D7262E;
+  --sign-yellow: #FFD23F;
+  --policeman: #0B5C8E;
+  --driver: #C2410C;
+  --ok: #15803D;              /* base.css để #16A34A, trắng chỉ 3.3:1 -> nâng lên 5.0:1 */
+}
+
+/* 1. LƯỚI AN TOÀN CHỐNG VỠ LAYOUT — fitStage() hạ --fit khi nội dung thật tràn */
+.slide {
+  --fit: 1;
+  --f-h1: calc(clamp(38px, 6.5vh, 130px) * var(--fs-scale) * var(--fit));
+  --f-h2: calc(clamp(34px, 5.4vh, 108px) * var(--fs-scale) * var(--fit));
+  --f-body: calc(clamp(32px, 4.2vh, 82px) * var(--fs-scale) * var(--fit));
+  --f-btn: calc(clamp(26px, 3.7vh, 74px) * var(--fs-scale) * var(--fit));
+  /* 3.0vh của base.css ở font-scale 80% ra 25.9px < 1/40 màn 1080p -> nâng 3.6vh */
+  --f-small: calc(clamp(24px, 3.6vh, 64px) * var(--fs-scale) * var(--fit));
+}
+
+/* 2. TẦNG NỀN — nằm NGOÀI .slide nên không bao giờ chạm vào flex-flow nội dung */
+#bgLayer { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+#app { position: relative; z-index: 1; }
+#bgLayer .scene { position: absolute; inset: 0; opacity: 0; transition: opacity .6s ease; }
+#bgLayer .scene.on { opacity: 1; }
+#bgLayer .deco { position: absolute; opacity: 1; }
+#bgLayer .blob { border-radius: 50%; }
+#bgLayer .deco.drift { animation: bgDrift 28s ease-in-out infinite alternate; }
+#bgLayer .deco.drift2 { animation: bgDrift2 34s ease-in-out infinite alternate; }
+@keyframes bgDrift { from { transform: translate3d(0,0,0); } to { transform: translate3d(2.2vw,-2.4vh,0); } }
+@keyframes bgDrift2 { from { transform: translate3d(0,0,0); } to { transform: translate3d(-2vw,2vh,0); } }
+
+body.focus #bgLayer .deco { display: none; }
+body.focus #bgLayer .scene { background-image: none !important; }
+body.nomotion #bgLayer .deco { animation: none !important; }
+body.nomotion .stagger > * { animation: none !important; opacity: 1 !important; transform: none !important; }
+body.nomotion .float-anim, body.nomotion .pulse { animation: none !important; }
+body.nomotion .slide.dir-next, body.nomotion .slide.dir-prev { animation: fadeIn .18s both; }
+
+@media (prefers-reduced-motion: reduce) {
+  #bgLayer .deco { animation: none !important; }
+  /* LỖI base.css: rút animation-duration nhưng KHÔNG xoá animation-delay -> con thứ
+     5-8 của .stagger còn ẩn (opacity:0 do fill-mode both) tới ~0.5s. */
+  .stagger > * { animation-delay: 0s !important; }
+}
+
+/* 3. LỖI base.css: .bin khai min-height clamp(120px,22vh,240px) ở dòng ~265 nhưng dòng ~430
+   (.drag-item,...,.bin{min-height:var(--touch-sm)}) cùng specificity nằm SAU nên đè mất ->
+   mọi ô thả chỉ còn ~72px, nhìn như một vạch kẻ. theme.css nạp sau nên trả lại được. */
+.bin { min-height: clamp(120px, 22vh, 240px); }
+
+/* 4. KHUNG NỘI DUNG HIỆN ĐẠI — viền tóc + bóng 2 lớp + bo góc lớn */
+:root {
+  --radius: 20px;
+  --radius-lg: 30px;
+  --line: rgba(18, 36, 52, .10);
+  --shadow: 0 2px 6px rgba(18,36,52,.05), 0 10px 26px rgba(18,36,52,.09);
+  --shadow-lg: 0 4px 14px rgba(18,36,52,.07), 0 24px 56px rgba(18,36,52,.14);
+}
+.card, .qtext, .imgrid > .cell, .dd-zone, .bin { border-width: 1.5px; }
+.card, .qtext, .imgrid > .cell { background: rgba(255,255,255,.94); }
+.opt, .key { border-width: 2px; background: rgba(255,255,255,.96); }
+.chip, .badge { border-width: 1.5px; background: rgba(255,255,255,.88); }
+.navbar { border-bottom: 1.5px solid var(--line); }
+.progress { height: 5px; }
+.pill {
+  background: linear-gradient(135deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 74%, #0B2A36) 100%);
+  padding: .3em 1.1em;
+  letter-spacing: -.005em;
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--accent) 26%, transparent);
+}
+.btn-primary { box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 26%, transparent); }
+.btn-check { box-shadow: 0 8px 20px color-mix(in srgb, var(--ok) 26%, transparent); }
+/* base.css để Reset = accent; nếu accent cũng xanh lá thì Reset và Check gần như cùng màu,
+   học sinh bấm nhầm trước cả lớp. */
+.btn-reset { background: #475569; color: #fff; }
+.btn-reset:active { background: #334155; }
+
+/* 5. VI TƯƠNG TÁC — chỉ transform + opacity (ngân sách TV box) */
+.pop-in { animation: popIn .34s var(--ease) both; }
+@keyframes popIn { from { opacity: 0; transform: scale(.86); } to { opacity: 1; transform: none; } }
+.nudge { animation: nudge .26s var(--ease); }
+@keyframes nudge { 50% { transform: scale(1.08); } }
+
+/* 6. KHỐI BỐ CỤC DÙNG LẠI */
+.rowwrap { display: flex; gap: clamp(8px,1.6vh,18px); align-items: stretch; justify-content: center; min-height: 0; flex: 1 1 auto; }
+.colhalf { flex: 1 1 0; min-width: 0; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(4px,1vh,12px); }
+.note { font-size: var(--f-small); color: var(--text-muted); text-align: center; }
+video.vid { width: 100%; height: 100%; max-height: 100%; object-fit: contain; border-radius: var(--radius); background: #000; }
+
+/* Hình vẽ SVG co giãn (nhiệt kế, trục số, sơ đồ...) */
+.viz { flex: 1 1 34vh; min-height: 0; display: flex; align-items: center; justify-content: center; width: 100%; }
+.viz > svg { width: 100%; height: 100%; max-height: 100%; display: block; }
+/* Cột chất lỏng/thanh chạy: scaleY từ đáy CHÍNH NÓ (fill-box), không phải view-box */
+.liquid { transition: transform .9s cubic-bezier(.4,0,.2,1); transform-box: fill-box; transform-origin: 50% 100%; }
+body.nomotion .liquid { transition: none; }
+
+/* Ô thả có ảnh (ghép tên vào tranh) */
+.dd-zone.matcell {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: clamp(2px,.6vh,8px); min-height: 0; overflow: hidden; padding: clamp(4px,.8vh,12px);
+}
+.colhalf > .matcell { flex: 1 1 auto; width: 100%; }
+.dd-zone.matcell img { flex: 1 1 auto; align-self: stretch; width: 100%; height: 100%; min-height: 0; max-height: 100%; object-fit: contain; }
+.dd-zone.matcell .drag-item { flex: 0 0 auto; font-size: var(--f-small); }
+
+/* Điền từ nhiều dòng — luật cứng §12 */
+.clozelist { display: flex; flex-direction: column; gap: clamp(6px,1.4vh,16px); flex: 1 1 auto; min-height: 0; justify-content: center; width: 100%; }
+.clozerow { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: clamp(6px,1.2vw,18px); }
+.clozerow .t { font-size: var(--f-body); }
+.clozerow .t.l { text-align: right; }
+.clozerow .t.r { text-align: left; }
+.dd-zone.clozeslot { min-width: 7em; display: flex; align-items: center; justify-content: center; padding: clamp(4px,.8vh,10px) clamp(6px,1vw,14px); }
+
+/* Lưới lựa chọn lớn (quiz) — bọc trong .grow.center-col để căn giữa vùng trống */
+.optgrid { display: grid; gap: clamp(8px,1.6vh,18px); align-content: center; grid-auto-rows: minmax(clamp(72px,11vh,170px), auto); }
+.opt { font: inherit; font-size: var(--f-btn); font-weight: 700; cursor: pointer; padding: .55em .8em; border-radius: var(--radius-lg); color: var(--text-primary); border: 2px solid var(--line); box-shadow: var(--shadow); transition: transform .14s var(--ease), border-color .15s, background .15s; }
+.opt.picked { border-width: 3px; border-color: var(--accent); background: var(--accent-soft); transform: translateY(-3px); }
+.opt:active { transform: scale(.97); }
+
+/* 7. MÀN HÌNH DỌC / HẸP */
+@media (max-aspect-ratio: 1/1) {
+  .rowwrap { flex-wrap: wrap; }
+  .rowwrap > .colhalf { flex: 1 1 42%; }            /* hàng >= 3 mục: 2 mục mỗi hàng */
+  .rowwrap.stacked > .colhalf { flex: 1 1 100%; }   /* hàng 2 mục có đoạn văn dài: xếp dọc */
+  .rowwrap.stacked { gap: clamp(4px,1vh,12px); }
+  .rowwrap.stacked .card { padding: clamp(8px,1.2vh,14px); }
+  .bin { min-height: clamp(80px,12vh,170px); }
+  .hero-img { flex: 1 1 22vh; }
+  .viz { flex: 1 1 17vh; }
+  /* Hàng flex xuống dòng thì mỗi dòng cao theo NỘI DUNG; ảnh không có chiều cao xác
+     định sẽ nở về kích thước gốc (ảnh dọc 768x1024 -> hơn 500px). Chặn trần. */
+  .matcell img, .colhalf .fitimg { max-height: 26vh; }
+  /* Hàng "mỗi mục 1 ảnh + vài lựa chọn": màn dọc thì mỗi mục thành 1 dải NGANG */
+  .rowwrap.cases > .colhalf { flex: 1 1 100%; flex-direction: row; align-items: center; gap: clamp(8px,2vw,20px); }
+  .rowwrap.cases > .colhalf > * { flex: 1 1 0; min-width: 0; }
+  .rowwrap.cases .matcell img { max-height: 15vh; }
+  .clozerow { grid-template-columns: 1fr auto; }
+  .clozerow .t.r { grid-column: 2; text-align: left; }
+}
+
+/* 8. LỚP THẨM MỸ — font nhúng, thanh công cụ gọn, tiêu đề, thẻ kéo, ô chờ, bố cục mẫu */
+
+/* 8a. FONT NHÚNG (assets/fonts, tải ở bước 3b) — mất mạng vẫn đúng font.
+   Baloo 2 cho tiêu đề (tròn, thân thiện), Nunito cho nội dung (dễ đọc từ xa). */
+@font-face { font-family: 'Baloo 2'; font-weight: 700; font-display: swap; src: url('assets/fonts/baloo-2-latin-700-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Baloo 2'; font-weight: 800; font-display: swap; src: url('assets/fonts/baloo-2-latin-800-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Nunito'; font-weight: 600; font-display: swap; src: url('assets/fonts/nunito-latin-600-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Nunito'; font-weight: 700; font-display: swap; src: url('assets/fonts/nunito-latin-700-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Nunito'; font-weight: 800; font-display: swap; src: url('assets/fonts/nunito-latin-800-normal.woff2') format('woff2'); }
+:root { --font-display: 'Baloo 2', 'Nunito', system-ui, sans-serif; --font-body: 'Nunito', 'Baloo 2', system-ui, -apple-system, 'Segoe UI', sans-serif; }
+body { font-family: var(--font-body); font-weight: 600; }
+.pill, .hero-title, .lesson-title, .eyebrow, .btn, .opt, .drag-item, .intro, h1, h2, h3 { font-family: var(--font-display); }
+/* Baloo 2 có vertical metrics rất cao (line-height normal ~1.6): KHÔNG chặn lại thì mọi nút/tiêu đề
+   cao thêm ~30%, slide chật bị tràn. Chặn line-height ngay khi đổi font. */
+.slide { line-height: 1.25; }
+.pill, .hero-title, .btn, .opt, .drag-item, .eyebrow, .h1, .h2, .h3, h1, h2, h3 { line-height: 1.12; }
+
+/* 8b. THANH CÔNG CỤ GỌN — chỉ còn: logo · tên bài · sao · ⚙ Teacher · toàn màn hình · ◀ ▶.
+   Mọi công cụ giáo viên dời vào ngăn kéo #tdrawer (visual-system.js mục 5 lo). */
+.navbar { gap: clamp(6px, .8vw, 12px); }
+.navbar .lesson-title { font-weight: 800; color: var(--text-primary); font-size: var(--f-small); }
+.navbar .iconbtn { background: transparent; }
+.navbar .iconbtn.nav-arrow { background: var(--accent); color: #fff; width: calc(var(--navbar-h) * .78); height: calc(var(--navbar-h) * .78); }
+.navbar .iconbtn.nav-arrow:active { background: color-mix(in srgb, var(--accent) 80%, #000); }
+.navbar .iconbtn.tbtn { width: auto; padding: 0 .8em; gap: .35em; background: var(--accent-soft); font-weight: 800; font-family: var(--font-display); }
+.navbar .stars { white-space: nowrap; flex: 0 0 auto; background: color-mix(in srgb, var(--accent-2) 16%, white); padding: .1em .7em; border-radius: 999px; }
+.iconbtn .ic { width: 58%; height: 58%; }
+.navbar .tbtn .ic { width: 1.1em; height: 1.1em; }
+#tdrawer {
+  position: fixed; z-index: var(--z-modal, 900); top: calc(var(--navbar-h) + 8px); right: 12px;
+  display: none; flex-direction: column; gap: 10px; padding: 14px;
+  background: #fff; border: 1.5px solid var(--line); border-radius: 22px; box-shadow: var(--shadow-lg);
+  max-height: calc(100vh - var(--navbar-h) - 24px); overflow: auto;
+}
+#tdrawer.on { display: flex; animation: popIn .2s var(--ease) both; }
+#tdrawer .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+#tdrawer .lbl { font-size: var(--f-small); color: var(--text-muted); font-weight: 700; min-width: 5.5em; }
+#tdrawer .iconbtn { background: var(--accent-soft); }
+
+/* 8c. TIÊU ĐỀ SLIDE — nhãn phần (eyebrow) + tiêu đề co theo chữ, không còn thanh xanh kéo hết bề ngang */
+.pill {
+  align-self: center; max-width: 100%;
+  border-radius: 999px; padding: .18em 1.1em .22em;
+  font-weight: 800; letter-spacing: -.01em;
+}
+.eyebrow {
+  align-self: center; display: inline-flex; align-items: center; gap: .4em;
+  font-size: var(--f-small); font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+  color: color-mix(in srgb, var(--accent) 88%, #000); margin-bottom: -.2em;
+}
+.eyebrow::before, .eyebrow::after { content: ''; width: 1.6em; height: 3px; border-radius: 3px; background: var(--accent-2); }
+
+/* 8d. THẺ KÉO — nhìn là biết cầm lên được: nền màu, chữ đậm, bóng, tay nắm ⠿ */
+.drag-item {
+  display: inline-flex; align-items: center; justify-content: center; gap: .35em;
+  padding: .28em .8em .28em .55em; border-radius: 16px;
+  font-size: var(--f-body); font-weight: 800; line-height: 1.15;
+  background: #fff; color: var(--text-primary);
+  border: 2.5px solid var(--chip-c, var(--accent));
+  box-shadow: 0 4px 0 var(--chip-c, var(--accent)), 0 8px 18px rgba(18,36,52,.12);
+  transition: transform .14s var(--ease), box-shadow .14s var(--ease);
+}
+.drag-item::before {
+  content: ''; flex: 0 0 auto; width: .42em; height: .9em; opacity: .55;
+  background: radial-gradient(circle, var(--chip-c, var(--accent)) 1.6px, transparent 2.2px) 0 0 / .21em .3em;
+}
+.drag-item:active, .drag-item.dragging { transform: translateY(2px) scale(1.04); box-shadow: 0 2px 0 var(--chip-c, var(--accent)), var(--shadow-lg); }
+.drag-item.locked::before { display: none; }
+.dd-tray > .drag-item:nth-child(4n+1) { --chip-c: #0EA5E9; }
+.dd-tray > .drag-item:nth-child(4n+2) { --chip-c: #F97316; }
+.dd-tray > .drag-item:nth-child(4n+3) { --chip-c: #8B5CF6; }
+.dd-tray > .drag-item:nth-child(4n+4) { --chip-c: #10B981; }
+.dd-tray { padding: clamp(6px, 1vh, 12px) clamp(8px, 1vw, 16px); border-radius: 22px; background: color-mix(in srgb, var(--accent) 6%, transparent); }
+/* Thẻ đã nằm trong ô thì phẳng lại, nhường chỗ cho nội dung ô */
+.dd-zone .drag-item { box-shadow: 0 2px 0 var(--chip-c, var(--accent)); font-size: var(--f-btn); }
+
+/* 8e. Ô CHỜ THẢ — không bao giờ là một hộp trắng trơn */
+.dd-zone, .bin {
+  border: 3px dashed color-mix(in srgb, var(--accent) 45%, transparent) !important;
+  background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--accent) 5%, #fff) 0 14px, #fff 14px 28px) !important;
+  border-radius: 22px;
+}
+.dd-zone:has(.drag-item), .bin:has(.drag-item) { border-style: solid !important; background: #fff !important; }
+.dd-zone:empty::after, .bin:empty::after {
+  content: 'Drop here'; margin: auto; font-family: var(--font-display); font-weight: 700;
+  font-size: var(--f-small); color: color-mix(in srgb, var(--accent) 55%, #fff);
+}
+/* Nhãn đầu ô (vd "It's a …") thành chip màu, không phải chữ trôi nổi */
+.bin > .bin-label, .bin > .chip:first-child, .bin > .t:first-child {
+  flex: 0 0 100%; text-align: center; font-family: var(--font-display); font-weight: 800; font-size: var(--f-body); color: var(--accent);
+}
+
+/* 8f. NÚT — icon nét thay emoji đầu nhãn nút (visual-system.js mục 5 tự thay) */
+.btn { font-weight: 800; letter-spacing: -.005em; }
+.ic { display: inline-block; flex: 0 0 auto; width: 1.05em; height: 1.05em; background: currentColor;
+  -webkit-mask: no-repeat center / contain; mask: no-repeat center / contain; }
+.btn .ic { margin-right: .35em; }
+
+/* 8g. BỐ CỤC MẪU — mỗi slide chọn 1, không quá 2 slide liền nhau cùng bố cục */
+/* L1 COVER / SECTION: ảnh lớn một bên, tiêu đề cực to một bên, màu khối nền */
+.cover { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: clamp(12px, 3vw, 48px); align-items: center; }
+.cover .cover-media { position: relative; height: 100%; min-height: 0; display: flex; align-items: center; justify-content: center; }
+.cover .cover-media::before {
+  content: ''; position: absolute; inset: 6% 4%; border-radius: 42% 58% 55% 45% / 50% 44% 56% 50%;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--accent) 22%, #fff), color-mix(in srgb, var(--accent-2) 26%, #fff));
+}
+/* Ảnh PPT thường nền trắng: KHÔNG dùng mix-blend-mode (slide đang animate transform nên bị cô lập, nền trắng vẫn lộ).
+   Đặt ảnh thành thẻ ảnh có chủ đích, xoay nhẹ, khối màu ló ra phía sau. */
+.cover .cover-media > * { position: relative; background: #fff; border-radius: 32px; padding: clamp(8px, 1.6vh, 20px); box-shadow: var(--shadow-lg); max-width: 76%; max-height: 82%; rotate: -2deg; }
+.cover .cover-text { display: flex; flex-direction: column; gap: clamp(8px, 2vh, 22px); align-items: flex-start; }
+.hero-title { font-size: calc(var(--f-h1) * 1.35); font-weight: 800; line-height: 1.02; letter-spacing: -.02em; color: var(--text-primary); }
+.hero-title em { font-style: normal; color: var(--accent); }
+.hero-sub { font-size: var(--f-body); color: var(--text-muted); font-weight: 700; }
+.tagrow { display: flex; flex-wrap: wrap; gap: 8px; }
+.tag { font-size: var(--f-small); font-weight: 800; padding: .15em .8em; border-radius: 999px; background: color-mix(in srgb, var(--accent) 12%, #fff); color: color-mix(in srgb, var(--accent) 85%, #000); }
+/* L2 SPLIT: media 55% | nội dung 45% — dùng cho slide có 1 ảnh chính + câu hỏi/checklist */
+.split { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: clamp(10px, 2vw, 32px); align-items: stretch; }
+.split > * { min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: clamp(6px, 1.4vh, 16px); }
+.split .media { background: #fff; border-radius: 28px; box-shadow: var(--shadow); padding: clamp(8px, 1.4vh, 16px); align-items: center; }
+/* L3 STAGE CARD: 1 thẻ lớn giữa màn (flashcard, câu hỏi đơn) */
+.stagecard { align-self: center; width: min(100%, 1200px); background: #fff; border-radius: 32px; box-shadow: var(--shadow-lg); padding: clamp(12px, 2.4vh, 30px); display: flex; flex-direction: column; align-items: center; gap: clamp(8px, 1.6vh, 18px); }
+/* Thẻ ảnh trong lưới: ảnh trên nền màu nhạt, nhãn thành thanh chân thẻ */
+.imgrid > .cell { background: #fff; border-radius: 24px; overflow: hidden; }
+.imgrid > .cell > .chip:last-child { border: 0; border-radius: 0; background: color-mix(in srgb, var(--accent) 9%, #fff); font-weight: 800; align-self: stretch; }
+
+/* 8h. VÙNG LÀM VIỆC TRỐNG (canvas vẽ, bảng viết) — luôn có nền gợi ý */
+.workarea { background:
+  radial-gradient(circle, color-mix(in srgb, var(--accent) 22%, transparent) 1.4px, transparent 1.8px) 0 0 / 28px 28px, #fff;
+  border-radius: 28px; border: 2px solid var(--line); box-shadow: inset 0 2px 10px rgba(18,36,52,.05); }
+
+@media (max-aspect-ratio: 1/1) {
+  .cover, .split { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
+  .hero-title { font-size: var(--f-h1); }
+}
+
+/* ===================== 9. RIÊNG BÀI "MEASUREMENT OF SPEED" ===================== */
+/* Nền xanh nhạt của PPT gốc: thẻ trắng hơi trong để hoạ tiết mép vẫn "thở" */
+.card, .stagecard, .split .media { background: rgba(255,255,255,.95); }
+
+/* L1 bìa — chữ wordart PHYSICS gốc + tiêu đề đỏ sẫm như PPT */
+.cover-text .wordart { height: 14vh; width: auto; max-width: 100%; object-fit: contain; align-self: flex-start; }
+.hero-title { color: #8B1A1A; }
+.hero-title em { color: var(--accent); }
+.cover .cover-media.thanks > * { background: transparent; box-shadow: none; padding: 0; rotate: 0deg; }
+.quote { font-size: var(--f-body); font-weight: 800; color: #B42318; font-style: italic; }
+
+.cover .cover-media > img.hero-img { flex: 0 1 auto; align-self: center; width: 88%; height: auto; max-height: 80%; }
+.cover .cover-media.thanks > img.hero-img { width: 92%; }
+
+/* Lead-in: bong bóng hội thoại (Terminator shape trong PPT) */
+.bubble {
+  font: inherit; font-family: var(--font-body); font-size: var(--f-body); font-weight: 800; text-align: left;
+  color: var(--accent); background: #fff; cursor: pointer;
+  border: 3px solid color-mix(in srgb, var(--accent) 35%, #fff); border-radius: 999px 999px 999px 26px;
+  padding: .55em 1.1em; box-shadow: var(--shadow); display: flex; align-items: center; gap: .6em;
+  transition: transform .15s var(--ease), border-color .15s;
+}
+.bubble .qn { flex: 0 0 auto; width: 1.7em; height: 1.7em; border-radius: 999px; background: var(--accent-2); color: #3A2A00;
+  display: flex; align-items: center; justify-content: center; font-family: var(--font-display); }
+.bubble.on { border-color: var(--accent); transform: translateY(-3px); box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent-2) 45%, transparent), var(--shadow-lg); }
+.bubble:active { transform: scale(.97); }
+.picframe { min-height: 0; flex: 1 1 0; display: flex; border-radius: 22px; transition: box-shadow .2s var(--ease); }
+.picframe.on { box-shadow: 0 0 0 7px var(--accent-2); }
+.picframe img { border-radius: 18px; }
+
+/* Flashcard từ vựng ngang (rộng hơn thẻ vuông mặc định) */
+.fc.vcard { width: min(100%, 150vh); height: 100%; max-height: 100%; }
+.fc.vcard .face { flex-direction: row; gap: clamp(10px, 2.4vw, 40px); padding: clamp(12px, 2.4vh, 30px); border-radius: 32px; }
+.fc.vcard .face .pic { flex: 1.15 1 0; min-width: 0; height: 100%; display: flex; align-items: center; justify-content: center; }
+.fc.vcard .face .pic img { width: 100%; height: 100%; object-fit: contain; }
+.fc.vcard .face .info { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: clamp(4px, 1.2vh, 14px); }
+.fc.vcard .back .pic { flex: .7 1 0; }
+.fc.vcard .back .info { flex: 1.3 1 0; }
+.vword { font-family: var(--font-display); font-size: calc(var(--f-h1) * 1.15); font-weight: 800; color: #8B1A1A; line-height: 1.05; }
+.vipa { font-size: var(--f-body); color: var(--text-muted); font-weight: 700; }
+.vdef { font-size: var(--f-small); color: var(--accent); font-weight: 700; line-height: 1.25; }
+.taphint { font-size: var(--f-small); color: var(--text-muted); font-weight: 700; }
+.fc.vcard .fc-stack-under { transform: translate(14px, 12px) rotate(1.6deg); opacity: .7; z-index: -1; }
+.fc.vcard .fc-stack-under.two { transform: translate(26px, 22px) rotate(3deg); opacity: .4; }
+.fc-wrap { min-height: 36vh; }
+.imgrid.recall { min-height: 34vh; }
+.goal { font-size: var(--f-small); }
+.flipin { animation: popIn .38s var(--ease) both; }
+.dots i { width: 16px; height: 16px; }
+
+/* Bảng từ vựng (slide 9 gốc) — kéo nghĩa tiếng Việt vào cột Meaning */
+.vtable { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr) minmax(0, 1.25fr); gap: clamp(4px, .9vh, 10px) clamp(6px, 1vw, 14px); align-content: center; width: min(100%, 1500px); align-self: center; flex: 0 0 auto; }
+.vtable .th { font-family: var(--font-display); font-weight: 800; font-size: var(--f-small); color: #8B1A1A; background: #FFF4C7; border-radius: 14px; padding: .2em .6em; text-align: center; }
+.vtable .td { display: flex; align-items: center; gap: .4em; font-size: var(--f-btn); font-weight: 800; background: rgba(255,255,255,.95); border-radius: 16px; border: 1.5px solid var(--line); padding: .15em .6em; min-height: var(--touch-sm); }
+.vtable .td.ipa { justify-content: center; font-weight: 700; color: var(--text-muted); cursor: pointer; }
+.vtable .td .say { flex: 0 0 auto; font-size: var(--f-small); }
+.vtable .dd-zone { display: flex; align-items: center; justify-content: center; min-height: var(--touch-sm); padding: 2px 6px; border-radius: 16px; }
+.vtable .dd-zone .drag-item { font-size: var(--f-small); }
+.vtray .drag-item { font-size: var(--f-small); }
+
+/* Picture quiz: thẻ chữ kem viền vàng như ô "Terminator" của PPT */
+.wordopt {
+  font: inherit; font-family: var(--font-display); font-size: var(--f-h2); font-weight: 800; color: #8B1A1A;
+  background: #FFF6D8; border: 4px solid #E9B949; border-radius: 999px; padding: .2em 1em; cursor: pointer;
+  box-shadow: 0 6px 0 #D9A62E, var(--shadow); min-height: var(--touch); width: 100%;
+  transition: transform .14s var(--ease);
+}
+.wordopt:active { transform: translateY(3px); box-shadow: 0 3px 0 #D9A62E; }
+.wordopt[disabled] { cursor: default; }
+.roundbar { display: flex; align-items: center; justify-content: center; gap: .6em; font-size: var(--f-small); font-weight: 800; color: var(--accent); }
+
+/* Đọc hiểu */
+.passage { font-size: var(--f-small); line-height: 1.42; text-align: justify; font-weight: 600; margin: 0; text-indent: 2em; }
+.passage .ev { border-radius: 8px; transition: background .3s, box-shadow .3s; }
+.passage .ev.on { background: color-mix(in srgb, var(--accent-2) 42%, #fff); box-shadow: 0 0 0 3px #D7262E; }
+.ptitle { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.ptitle .src { font-size: var(--f-small); font-weight: 800; color: var(--accent); background: #FFF4C7; border-radius: 999px; padding: .1em .8em; }
+.qtabs { display: flex; gap: clamp(6px, 1vw, 12px); justify-content: center; }
+.qtab { font: inherit; font-family: var(--font-display); font-size: var(--f-btn); font-weight: 800; min-width: var(--touch); min-height: var(--touch-sm);
+  border-radius: 999px; border: 3px solid var(--line); background: #fff; color: var(--accent); cursor: pointer; position: relative; padding: 0 .7em; }
+.qtab.cur { background: var(--accent); color: #fff; border-color: var(--accent); }
+.qtab.answered:not(.cur) { border-color: var(--accent); background: var(--accent-soft); }
+.qtext { font-size: var(--f-body); font-weight: 800; color: #8B1A1A; text-align: center; border-radius: 22px; }
+.qtext { padding: clamp(6px, 1.2vh, 14px); }
+.qtext .tag { margin-left: .3em; vertical-align: middle; }
+.opt.small { font-size: var(--f-body); text-align: left; }
+
+/* Nghe hiểu: trình phát audio tuỳ chỉnh */
+.player { display: flex; align-items: center; gap: clamp(8px, 1.2vw, 16px); background: #fff; border-radius: 999px; padding: 6px 18px 6px 6px; box-shadow: var(--shadow); width: min(100%, 1100px); align-self: center; }
+.player .btn { min-height: var(--touch-sm); padding: .25em .9em; }
+.player .bar { flex: 1 1 auto; height: 14px; border-radius: 999px; background: var(--accent-soft); overflow: hidden; cursor: pointer; }
+.player .bar > i { display: block; height: 100%; width: 100%; transform-origin: 0 50%; transform: scaleX(0); background: linear-gradient(90deg, var(--accent), var(--accent-2)); }
+.player .time { font-size: var(--f-small); font-weight: 800; color: var(--text-muted); white-space: nowrap; }
+.lqrow { display: flex; gap: clamp(8px, 1.6vw, 26px); justify-content: center; flex-wrap: wrap; }
+.lqgroup { display: flex; align-items: center; gap: clamp(6px, .7vw, 12px); background: rgba(255,255,255,.95); border-radius: 999px; padding: 6px 10px; box-shadow: var(--shadow); }
+.lqgroup .lbl { font-family: var(--font-display); font-weight: 800; font-size: var(--f-btn); color: #8B1A1A; padding: 0 .3em; }
+.letter { font: inherit; font-family: var(--font-display); font-size: var(--f-btn); font-weight: 800; width: var(--touch); height: var(--touch-sm); border-radius: 999px; border: 3px solid var(--line); background: #fff; color: var(--accent); cursor: pointer; position: relative; }
+.letter.picked { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* Nói: đóng vai */
+.rolerow { display: flex; gap: clamp(6px, 1vw, 12px); justify-content: center; flex-wrap: wrap; }
+.btn.role.on { outline: 5px solid var(--accent-2); outline-offset: 2px; }
+.line-card { background: #fff; border-radius: 28px; box-shadow: var(--shadow-lg); padding: clamp(10px, 2vh, 24px); display: flex; flex-direction: column; gap: clamp(6px, 1.2vh, 14px); border-left: 12px solid var(--policeman); flex: 1 1 auto; min-height: 0; justify-content: center; }
+.line-card.driver { border-left-color: var(--driver); }
+.line-card .who { font-family: var(--font-display); font-weight: 800; font-size: var(--f-body); color: var(--policeman); }
+.line-card.driver .who { color: var(--driver); }
+.line-card .say { font-size: var(--f-body); font-weight: 700; line-height: 1.3; }
+.line-card .yourturn { align-self: flex-start; font-size: var(--f-small); font-weight: 800; background: var(--accent-2); color: #3A2A00; border-radius: 999px; padding: .1em .8em; }
+
+/* Viết: giấy kẻ dòng xanh như phiếu gốc */
+.qlist { display: flex; flex-direction: column; gap: clamp(6px, 1.2vh, 14px); width: 100%; }
+.qitem { font: inherit; text-align: left; font-size: var(--f-small); font-weight: 800; font-style: italic; background: #fff; color: var(--text-primary); border: 2px solid var(--line); border-radius: 20px; padding: .45em .8em; cursor: pointer; display: flex; gap: .5em; align-items: center; box-shadow: var(--shadow); }
+.qitem.done { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 10%, #fff); }
+.qitem .ck { flex: 0 0 auto; width: 1.3em; height: 1.3em; border-radius: 8px; border: 3px solid var(--line); display: flex; align-items: center; justify-content: center; font-style: normal; color: #fff; }
+.qitem.done .ck { background: var(--ok); border-color: var(--ok); }
+.workarea.lined { background:
+  repeating-linear-gradient(180deg, transparent 0, transparent calc(var(--lh, 64px) - 3px), rgba(30,58,80,.38) calc(var(--lh, 64px) - 3px), rgba(30,58,80,.38) var(--lh, 64px)) 0 18px / 100% 100% no-repeat,
+  #E4F7EA; }
+.workarea { flex: 1 1 auto; min-height: 0; width: 100%; display: flex; padding: 8px; }
+.workarea canvas.draw { background: transparent; border: 0; }
+.pens { display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; }
+.pen { font: inherit; font-family: var(--font-display); font-size: var(--f-small); font-weight: 800; border-radius: 999px; padding: .2em .8em; min-height: var(--touch-sm); border: 3px solid var(--line); background: #fff; color: var(--pc); cursor: pointer; }
+.pen.on { border-color: var(--pc); box-shadow: 0 0 0 4px color-mix(in srgb, var(--pc) 22%, transparent); }
+.wordbank { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.wordbank .chip { cursor: pointer; font-weight: 800; color: var(--accent); }
+
+/* Tổng kết: ô lật nghĩa tiếng Việt */
+.imgrid.recall > .cell { cursor: pointer; position: relative; }
+.imgrid.recall > .cell .vn { font-size: var(--f-small); font-weight: 800; color: #8B1A1A; text-align: center; padding: .1em .3em; }
+.imgrid.recall > .cell.open { border-color: var(--accent-2); box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent-2) 40%, transparent), var(--shadow); }
+.goals { display: flex; gap: clamp(8px, 1.4vw, 18px); justify-content: center; flex-wrap: wrap; }
+.goal { font-size: var(--f-small); font-weight: 800; background: rgba(255,255,255,.95); border-radius: 999px; padding: .25em .9em; box-shadow: var(--shadow); color: var(--text-primary); }
+
+/* Đọc hiểu: đoạn văn trên, câu hỏi dưới (đoạn văn 140 từ không vừa nửa màn ở chữ --f-small) */
+.readwrap { flex: 1 0 auto; display: flex; flex-direction: column; gap: clamp(6px, 1.2vh, 14px); justify-content: center; }
+.readwrap > .card { flex: 0 0 auto; display: flex; flex-direction: column; gap: clamp(4px, .8vh, 10px); padding: clamp(8px, 1.4vh, 18px) clamp(12px, 1.6vw, 26px); }
+.readwrap .ptitle .btn { min-height: var(--touch-sm); padding: .2em .9em; }
+.passage { line-height: 1.34; }
+.qpanel { flex: 0 0 auto; display: flex; flex-direction: column; gap: clamp(6px, 1vh, 12px); }
+.qhead { display: flex; align-items: center; gap: clamp(8px, 1.4vw, 20px); justify-content: center; flex-wrap: wrap; }
+.qhead .qtext { flex: 1 1 auto; text-align: left; background: rgba(255,255,255,.95); box-shadow: var(--shadow); }
+.qpanel .optgrid { grid-auto-rows: minmax(var(--touch-sm), auto); }
+.qpanel .opt.small { font-size: var(--f-btn); padding: .3em .7em; }
+.imgrid.recall { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.imgrid.recall > .cell > .chip { color: #8B1A1A; }
+.imgrid.recall > .cell.open > .chip { background: color-mix(in srgb, var(--accent-2) 30%, #fff); }
+.wrow > .wl { flex: .8 1 0; }
+.wrow > .wr { flex: 1.2 1 0; }
+.workarea .drawwrap { flex: 1 1 auto; min-height: 0; min-width: 0; }
+
+@media (max-aspect-ratio: 1/1) {
+  .imgrid.recall { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .rowwrap.wrow { flex-direction: column; flex-wrap: nowrap; }
+  .rowwrap.wrow > .wl { flex: 0 0 auto; }
+  .rowwrap.wrow > .wr { flex: 1 1 auto; }
+  .fc.vcard .back .pic { display: none; }
+  .vword { font-size: var(--f-h1); }
+  .qpanel .optgrid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .fc-wrap { min-height: 66vh; }
+  .fc.vcard .back .vword { font-size: var(--f-body) !important; }
+  .fc.vcard .face { padding: 10px 14px; }
+  .fc.vcard .back .info { gap: 4px; }
+  .slide .btnrow { gap: 6px; }
+  .slide .btnrow .btn { padding: .35em .6em; min-width: 0; }
+  .grow.center-col.vstage { justify-content: safe center; }
+  .fc.vcard .face { flex-direction: column; }
+  .fc.vcard .face .pic { flex: 1 1 0; min-height: 0; width: 100%; }
+  .vtable { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.3fr); }
+  .vtable .ipa, .vtable .th.ipa { display: none; }
+  .split .media img { max-height: 30vh; }
+}
