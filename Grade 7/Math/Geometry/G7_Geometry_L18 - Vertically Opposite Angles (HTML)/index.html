@@ -2750,10 +2750,10 @@ Engine.register({
   render(root, ctx) {
     root.appendChild(h('div', { class: 'pill fixed', text: '1. Materials' }));
     root.appendChild(h('div', { class: 'note fixed', text: 'Do you have everything? Tap each one you have.' }));
-    const M = [['m-pencil', 'Pencil & eraser'], ['m-ruler', 'Ruler'], ['m-protractor', 'Protractor'], ['m-colours', 'Coloured pencils']];
+    const M = [['assets/img/m-pencil.png', 'Pencil & eraser'], ['assets/img/m-ruler.png', 'Ruler'], ['assets/img/m-protractor.png', 'Protractor'], ['assets/img/m-colours.png', 'Coloured pencils']];
     const grid = h('div', { class: 'matgrid stagger' });
     M.forEach(([img, name]) => {
-      const b = h('button', { class: 'matcard' }, [h('div', { class: 'im' }, [ctx.img('assets/img/' + img + '.png', { alt: name, zoom: false })]), h('div', { class: 'lb' }, [h('span', { class: 'box', text: '✓' }), h('span', { text: name })])]);
+      const b = h('button', { class: 'matcard' }, [h('div', { class: 'im' }, [ctx.img(img, { alt: name, zoom: false })]), h('div', { class: 'lb' }, [h('span', { class: 'box', text: '✓' }), h('span', { text: name })])]);
       ctx.on(b, 'click', () => {
         b.classList.toggle('on'); Sound.playEffect('click');
         if (b.classList.contains('on')) Sound.speak(name.replace('&', 'and'));
@@ -3320,12 +3320,13 @@ Engine.register({
   Lab.autoEyebrow = false;   /* tab tiêu đề đỏ như PPT gốc; nhãn phần đè lên mép khung sổ nên tắt */
 
   /* Nền: ảnh minh hoạ gốc của PPT, mỗi slide khai `bg`. space = nền thiên hà phần Review (+ thuyền capybara). */
-  var BG = { cover: 'bg-cover.jpg', page: 'bg-page.jpg', page2: 'bg-page2.jpg', page3: 'bg-page3.jpg',
-    space: 'bg-space.jpg', space2: 'bg-space2.jpg', project: 'bg-project.jpg', thanks: 'bg-thanks.jpg' };
+  /* đường dẫn ghi ĐỦ (không ghép chuỗi) để bản 1-file nhúng ảnh thay thế được */
+  var BG = { cover: 'assets/img/bg-cover.jpg', page: 'assets/img/bg-page.jpg', page2: 'assets/img/bg-page2.jpg', page3: 'assets/img/bg-page3.jpg',
+    space: 'assets/img/bg-space.jpg', space2: 'assets/img/bg-space2.jpg', project: 'assets/img/bg-project.jpg', thanks: 'assets/img/bg-thanks.jpg' };
   function scenePaper(key) {
     if (!BG[key]) key = 'page';
     var sc = dv('scene paper k-' + key);
-    sc.style.backgroundImage = 'url("assets/img/' + BG[key] + '")';
+    sc.style.backgroundImage = 'url("' + BG[key] + '")';
     if (key === 'space' || key === 'space2') {
       var b = dv('boat drift'); var im = document.createElement('img');
       im.src = 'assets/img/boat.png'; im.alt = ''; b.appendChild(im); sc.appendChild(b);
@@ -3616,7 +3617,9 @@ Engine.register({
     { q: 'What is the point that is opposite the base of a shape called?', o: ['Edge', 'Base', 'Vertex', 'Side'], a: 2, mode: 'drag' },
     { letters: 'AEELMNPPRSTUY', word: 'SUPPLEMENTARY' }
   ];
-  function capy(n) { return 'assets/img/capy-' + (n < 10 ? '0' : '') + n + '.png'; }
+  var CAPY = ['assets/img/capy-01.png', 'assets/img/capy-02.png', 'assets/img/capy-03.png', 'assets/img/capy-04.png', 'assets/img/capy-05.png', 'assets/img/capy-06.png',
+    'assets/img/capy-07.png', 'assets/img/capy-08.png', 'assets/img/capy-09.png', 'assets/img/capy-10.png', 'assets/img/capy-11.png', 'assets/img/capy-12.png'];
+  function capy(n) { return CAPY[n - 1]; }
   Lab.capy = capy;
 
   function boardRow(ctx, extra) {

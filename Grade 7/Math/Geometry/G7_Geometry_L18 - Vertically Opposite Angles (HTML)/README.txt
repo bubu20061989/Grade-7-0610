@@ -1,6 +1,8 @@
 G7 · Geometry · Lesson 18: Vertically Opposite Angles — bài giảng HTML tương tác
 
 CÁCH MỞ: nhấp đúp index.html (Chrome / Edge / Safari). Không cần mạng.
+BẢN 1 FILE: "G7_Geometry_L18 - Vertically Opposite Angles.html" (cạnh thư mục này) đã nhúng sẵn
+ảnh + font — chỉ cần 1 file đó, gửi qua Zalo/email/USB là chạy, không cần thư mục assets.
 QUAN TRỌNG: luôn giữ thư mục "assets" nằm cạnh index.html (ảnh nền, ảnh, font nằm trong đó).
 Chép sang máy khác / USB: chép NGUYÊN thư mục này.
 
